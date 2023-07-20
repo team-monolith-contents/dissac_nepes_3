@@ -3,6 +3,10 @@ from IPython.display import display, clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import cv2
+import seaborn as sns
+import pandas as pd
+import urllib.request
 
 class AIProject1():
     def __init__(self):
@@ -55,3 +59,40 @@ class AIProject1():
     def __on_b_value_change(self, change):
         with self.__out:
             self.__draw(self.__fig, self.__a.value, change['new'])
+
+class AIProject2():
+    def __init__(self):
+        # image 다운로드
+        url = "https://tmn-bucket-materials-all.s3.ap-northeast-2.amazonaws.com/data/COVID19-Xray.jpeg"
+        urllib.request.urlretrieve(url, "COVID19-Xray.jpeg")
+        
+        # X-ray 이미지를 불러옵니다.
+        self.__xray_image = cv2.imread('COVID19-Xray.jpeg', cv2.IMREAD_GRAYSCALE)
+        self.__xray_image = cv2.resize(self.__xray_image, dsize=(0, 0), fx=0.15, fy=0.15, interpolation=cv2.INTER_AREA)
+        self.__df_image = pd.DataFrame(self.__xray_image)
+        
+        w = widgets.interactive(self.__check_gray_image_value, 
+                vertical=widgets.IntSlider(min=0, max=self.__xray_image.shape[0]-15, value=10), 
+                horizontal=widgets.IntSlider(min=0, max=self.__xray_image.shape[1]-15, value=30)
+               )
+        
+        display(widgets.VBox([w.children[1], w.children[0], w.children[-1]]))
+
+    def __check_gray_image_value(self,vertical,horizontal):
+        rs, re = vertical, vertical + 15
+        cs, ce = horizontal, horizontal + 15
+        # 이미지를 출력합니다.
+        fig = plt.figure(figsize=(15, 6))
+        fig.add_subplot(1, 2, 1)
+        plt.xlim(0, self.__xray_image.shape[1]-1)
+        plt.ylim(self.__xray_image.shape[0]-1, 0)
+        plt.imshow(self.__xray_image, cmap='gray')
+        # 초록박스를 표시합니다.
+        plt.plot([cs, ce, ce, cs, cs], [rs, rs, re, re, rs], color="darkgreen", linewidth=1.5)
+        # 화소값을  출력합니다.
+        fig.add_subplot(1, 2, 2)  
+        sns.heatmap(self.__df_image.iloc[rs:re, cs:ce], vmin=0, vmax=255, annot=True, fmt='d', 
+                    cmap=sns.cubehelix_palette(start=2, rot=0, dark=0, light=.95, reverse=True, as_cmap=True))
+        plt.show()
+    
+
